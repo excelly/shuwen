@@ -12,8 +12,7 @@ logger.setLevel(logging.INFO)
 
 parser = argparse.ArgumentParser(
     description="normalize raw text data to numpy format")
-parser.add_argument('--input_file', type=str, 
-                    default='data/track1/rec_log_train.10-1-1')
+parser.add_argument('input_file', type=str)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -33,11 +32,12 @@ if __name__ == '__main__':
 
     data[:, 0] = user_id
     data[:, 1] = item_id
+    data = {
+        "uuid": uuid,
+        "uiid": uiid,
+        "rec_log": data
+    }
 
     logger.info('Saving processed data to %s', args.output_file)
-    with open(args.output_file, 'w') as out:
-        pkl.dump({
-            "uuid": uuid,
-            "uiid": uiid,
-            "rec_log": data
-        }, out, pkl.HIGHEST_PROTOCOL)
+    with open(args.output_file, 'wb') as out:
+        pkl.dump(data, out, pkl.HIGHEST_PROTOCOL)

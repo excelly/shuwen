@@ -25,12 +25,14 @@ def svd_reconstruct(U, s, Vt, k=None):
 
 def sparse_rmse(Y, R):
     assert R.shape == Y.shape
-    R = R.tocoo()
+    if not hasattr(R, 'row'):
+        R = R.tocoo()
     return np.sqrt(np.power((R.data - Y[R.row, R.col]), 2).mean())
 
 def sparse_set(Y, R):
     assert R.shape == Y.shape
-    R = R.tocoo()
+    if not hasattr(R, 'row'):
+        R = R.tocoo()
     Y[R.row, R.col] = R.data
 
 parser = argparse.ArgumentParser(
@@ -54,28 +56,43 @@ if __name__ == '__main__':
         data = pkl.load(inFile)
     uuid = data['uuid']
     uiid = data['uiid']
-    rec_log = data['rec_log']
+    rec_log = data['rec_log_train']
+    rec_log_test = data['rec_log_test']
     logger.info('Loaded %d users, %d items, and %d logs', 
                 uuid.size, uiid.size, rec_log.shape[0])
 
-    R0 = ssp.csr_matrix((rec_log[:, 2].astype(np.float32), 
-                         (rec_log[:, 0], rec_log[:, 1])))
+    R_shape = (uuid.size, uiid.size)
+    R_train = ssp.coo_matrix((rec_log[:, 2].astype(np.float32), 
+                              (rec_log[:, 0], rec_log[:, 1])),
+                             R_shape)
+    R_test = ssp.coo_matrix((rec_log_test[:, 2].astype(np.float32), 
+                             (rec_log_test[:, 0], rec_log_test[:, 1])),
+                            R_shape)
+    R_train.sum_duplicates()
+    R_test.sum_duplicates()
+    R_train.data = np.clip(R_train.data, -1, 1, R_train.data)
+    R_test.data = np.clip(R_test.data, -1, 1, R_test.data)
     logger.info('Constructed rating matrix of shape %s, NNZ = %d, Sparsity = %g', 
-                R0.shape, R0.nnz, float(R0.nnz) / R0.shape[0] / R0.shape[1])
+                R_train.shape, R_train.nnz, 
+                float(R_train.nnz) / R_train.shape[0] / R_train.shape[1])
 
-    R = R0
+    R = R_train.tocsr()
     for i in range(args.epoch):
-        logger.info('Soft-Impute round %d...', i)
-
         U, s, Vt = svd(R, args.rank)
         s = np.maximum(s - args.lam, 0)
-        logger.info('Sigular value residual = %0.3g', s[-1])
 
         Y = svd_reconstruct(U, s, Vt)
-        sparse_set(Y, R0)
+
+        logger.info('Iter = %d. RMSE: Train = %0.4f, Test = %0.4f', 
+                    i, sparse_rmse(Y, R_train), sparse_rmse(Y, R_test))
+
+        sparse_set(Y, R_train)
         R = Y
+
+    sys.exit(0)
 
     U, s, Vt = svd(R, args.rank)
     for k in range(args.rank):
         Y = svd_reconstruct(U, s, Vt, k)
-        print k, sparse_rmse(Y, R0)
+        print k, sparse_rmse(Y, R_train)
+        print k, sparse_rmse(Y, R_test)

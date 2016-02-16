@@ -17,11 +17,9 @@ def procRow(line, user_interval, item_interval):
 
 parser = argparse.ArgumentParser(
     description="process raw data to generate a cleaned, downsampled data set")
-parser.add_argument('--input_file', type=str, 
-                    default='raw_data/track1/rec_log_train.txt')
-parser.add_argument('--output_file', type=str, 
-                    default='data/track1/rec_log_train')
-parser.add_argument('--line_sampling', type=float, default=0.1)
+parser.add_argument('input_file', type=str)
+parser.add_argument('output_file', type=str)
+parser.add_argument('--line_sampling', type=float, default=1)
 parser.add_argument('--user_sampling', type=float, default=1)
 parser.add_argument('--item_sampling', type=float, default=1)
 

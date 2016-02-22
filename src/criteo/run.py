@@ -2,6 +2,9 @@ import sys
 import os
 import subprocess
 
+from pylab import *
+import matplotlib.pyplot  as pyplot
+
 import logging
 logging.basicConfig(format='%(levelname)s %(asctime)s : %(message)s')
 logger = logging.getLogger(__name__)
@@ -23,15 +26,24 @@ if __name__ == '__main__':
     logger.info('Executing: %s', cmd)
     subprocess.check_call(cmd)
 
-    logger.info('\n\n\n\nLearning logistic regression')
+    logger.info('Learning logistic regression')
     Cs = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 
           1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]
     NEs = []
     for C in Cs:
-        cmd = ['python', 'src/criteo/learn_lr.py', PROC_DATA, '--C', str(C)]
+        cmd = ['python', 'src/criteo/learn_lr.py', PROC_DATA, 
+               '--C', str(C), '--cv_folds', '5']
         logger.info('Executing: %s', cmd)
         logs = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         NEs.append(parse_ne(logs))
         
     for C, NE in zip(Cs, NEs):
         logger.info('C = %g, NE = %g', C, NE)
+
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1,1,1)
+    line, = ax.plot(Cs, NEs, 'b-+', lw=2, markersize=10)
+    ax.set_xlabel('C')
+    ax.set_ylabel('NE')
+    ax.set_xscale('log')
+    show()

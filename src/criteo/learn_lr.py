@@ -1,6 +1,7 @@
 import os, sys, time
 import cPickle as pkl
 import argparse
+import multiprocessing as mp
 
 import numpy as np
 import scipy as sp
@@ -18,7 +19,7 @@ logger.setLevel(logging.INFO)
 parser = argparse.ArgumentParser(
     description="logistic regression")
 parser.add_argument('input_file', type=str)
-parser.add_argument('--C', type=float, default=100)
+parser.add_argument('--C', type=float, default=1)
 parser.add_argument('--cv_folds', type=int, default=3)
 
 if __name__ == '__main__':
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     logger.info('Starting %d-fold cross validation', args.cv_folds)
     predictions = np.ones(n) * -1
     for fold, idx in enumerate(CV.KFold(n, n_folds=args.cv_folds, shuffle=True)):
-        logger.info('Starting fold %d / %d', fold, args.cv_folds)
+        logger.info('Processing fold %d / %d', fold, args.cv_folds)
         trIdx, teIdx = idx
         classifier.fit(features[trIdx], labels[trIdx])
         predictions[teIdx] = classifier.predict_proba(features[teIdx])[:, 1]

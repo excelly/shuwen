@@ -4,6 +4,7 @@ import argparse
 
 import numpy as np
 import scipy as sp
+import scipy.sparse as ssp
 import pandas as pd
 
 import logging
@@ -47,7 +48,34 @@ if __name__ == '__main__':
     for i in range(9):
         col = df[cf(i)]
         col = pd.Categorical(col)
-        col = (col.labels + 1) % args.sparse_bin_size
-        df[cf(i)] = col + 1
+        col = (col.codes + 1) % args.sparse_bin_size
+        df[cf(i)] = col
 
     print df[:5]
+    print ''
+
+    start = 0
+    for i in range(i):
+        df[ff(i)] = df[ff(i)] + start
+        start = df[ff(i)].max() + 1
+
+    for i in range(9):
+        df[cf(i)] = df[cf(i)] + start
+        start = df[cf(i)].max() + 1
+
+    print df[:5]
+
+    df = df.as_matrix()
+    labels = df[:, -1]
+    features = df[:, :-1]
+    n, dim = features.shape
+
+    I = np.tile(np.reshape(np.arange(n), (n, 1)), (1, dim))
+    features = ssp.csr_matrix((np.ones(n * dim), (I.ravel(), features.ravel())))
+    print features[:3]
+
+    with open(args.output_file, 'wb') as out:
+        pkl.dump({
+            "labels": labels,
+            "features": features
+        }, out, -1)
